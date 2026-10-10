@@ -182,24 +182,12 @@
       let botColor = "green";
       let turnCount = 0;
       let gameId = 0;
+      let scanIntervalId = null;
 
-      /**
-       * Updates status message banner in UI.
-       * @param {string} message - Text to render in status bar.
-       */
       function setStatus(message) {
         statusElement.textContent = message;
       }
 
-      /**
-       * Bilinear Interpolation Algorithm:
-       * Maps normalized grid positions (u, v) ∈ [0.0, 1.0] to arbitrary quadrilateral points on video stream.
-       * Corner Sequence: [0] Top-Left, [1] Top-Right, [2] Bottom-Right, [3] Bottom-Left.
-       *
-       * @param {number} u - Horizontal ratio across quadrilateral (0.0 = left edge, 1.0 = right edge).
-       * @param {number} v - Vertical ratio across quadrilateral (0.0 = top edge, 1.0 = bottom edge).
-       * @returns {{x: number, y: number}} Interpolated point coordinates.
-       */
       function mapPoint(u, v) {
         const topX = corners[0].x * (1 - u) + corners[1].x * u;
         const topY = corners[0].y * (1 - u) + corners[1].y * u;
@@ -212,22 +200,16 @@
         };
       }
 
-      /**
-       * UI Render Engine:
-       * 1. Rebuilds digital grid state display.
-       * 2. Renders 4 corner selection pins over video feed.
-       * 3. Projects perspective 3x3 SVG lines and tile overlays using bilinear mapping.
-       */
       function render() {
         // 1. Digital board state
         boardElement.innerHTML = board
           .map(
             (cell, index) => `
-        <div class="cell">
-          <span class="num">${index + 1}</span>
-          ${cell ? `<div class="piece" style="background:${COLOR_PALETTE[cell.color]}; border-radius:${cell.player === "human" ? "50%" : "0"}"></div>` : ""}
-        </div>
-      `,
+    <div class="cell">
+      <span class="num">${index + 1}</span>
+      ${cell ? `<div class="piece" style="background:${COLOR_PALETTE[cell.color]}; border-radius:${cell.player === "human" ? "50%" : "0"}"></div>` : ""}
+    </div>
+  `,
           )
           .join("");
 
@@ -242,7 +224,6 @@
 
         // 3. Perspective Grid Lines & Board Tile Overlays
         if (corners.length === 4) {
-          // Draw perspective grid subdivisions
           for (let i = 1; i < 3; i++) {
             const v1 = mapPoint(i / 3, 0);
             const v2 = mapPoint(i / 3, 1);
@@ -253,7 +234,6 @@
             svgHTML += `<line x1="${h1.x * 100}%" y1="${h1.y * 100}%" x2="${h2.x * 100}%" y2="${h2.y * 100}%" class="line"/>`;
           }
 
-          // Draw projected moves onto live video stream
           board.forEach((cell, index) => {
             if (!cell) return;
             const point = mapPoint(
@@ -268,19 +248,9 @@
         svgElement.innerHTML = svgHTML;
       }
 
-      /**
-       * Computer Vision Processing Engine:
-       * 1. Captures active frame onto offscreen canvas buffer.
-       * 2. Iterates over open squares on board.
-       * 3. Samples 5x5 pixel cluster centered within square region (inner 40% area).
-       * 4. Converts interpolated relative coordinates to 1D canvas image data buffer index.
-       * 5. Color Discriminator Thresholding:
-       *    - RED: r > 100 AND r > g * 1.3 AND r > b * 1.3
-       *    - GREEN: g > 80 AND g > r * 1.2
-       * 6. Triggers player move if ≥6 samples match expected player color.
-       */
       function scanCameraFeed() {
         if (!isGameActive || !isWaitingForHuman || corners.length !== 4) return;
+        if (!video.videoWidth || !video.videoHeight) return;
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -295,7 +265,6 @@
           const row = Math.floor(i / 3);
           const col = i % 3;
 
-          // Sample 5x5 grid in center of cell
           for (let y = 0; y < 5; y++) {
             for (let x = 0; x < 5; x++) {
               const point = mapPoint(
@@ -303,9 +272,14 @@
                 (row + 0.3 + y * 0.1) / 3,
               );
 
-              // Linear Index in 1D RGBA ImageData array: (y * width + x) * 4
-              const pixelX = Math.round(point.x * canvas.width);
-              const pixelY = Math.round(point.y * canvas.height);
+              const pixelX = Math.min(
+                Math.max(Math.round(point.x * canvas.width), 0),
+                canvas.width - 1,
+              );
+              const pixelY = Math.min(
+                Math.max(Math.round(point.y * canvas.height), 0),
+                canvas.height - 1,
+              );
               const offset = (pixelY * canvas.width + pixelX) * 4;
 
               const r = frameData.data[offset];
@@ -325,34 +299,25 @@
           }
         }
       }
-      /**
-       * Checks if the specified player has won the game.
-       * @param {string} player - 'human' or 'computer'
-       * @returns {boolean}
-       */
+
       function checkWin(player) {
-        return WINNING_COMBINATIONS.some((combination) =>
-          combination.every(
+        return WINNING_COMBINATIONS.some((combo) =>
+          combo.every(
             (index) => board[index] && board[index].player === player,
           ),
         );
       }
-      /**
-       * Executes turn logic, checks win conditions, logs move data, and triggers bot response.
-       * @param {number} index - Targeted board cell index [0..8].
-       * @param {string} player - Player key ('human' or 'computer').
-       * @param {string} color - Selected color key ('red' or 'green').
-       */
+
       function executeMove(index, player, color) {
         board[index] = { player, color };
         turnCount++;
-        isWaitingForHuman = player === "computer";
+        isWaitingForHuman = false;
         render();
 
-        // Non-blocking asynchronous API call
+        // Log move to Google Script non-blockingly
         fetch(API_ENDPOINT, {
           method: "POST",
-          mode: "no-cors", // Required for Google Apps Script endpoint on GitHub Pages
+          mode: "no-cors",
           headers: { "Content-Type": "text/plain" },
           body: JSON.stringify({
             gameId,
@@ -361,12 +326,12 @@
             cell: index + 1,
             turnNr: turnCount,
           }),
-        }).catch((err) => console.error("Logging error:", err));
+        }).catch(() => {});
 
-        // Check game over condition or trigger bot move
+        // Win / Draw Checks
         if (checkWin(player)) {
           isGameActive = false;
-          setStatus(`${player === "human" ? "You win!" : "Bot wins!"}`);
+          setStatus(player === "human" ? "You win!" : "Bot wins!");
           return;
         }
 
@@ -376,24 +341,23 @@
           return;
         }
 
-        // Trigger bot move after a short delay if it's the computer's turn
-        if (player === "human" && isGameActive) {
+        // Schedule Next Turn
+        if (player === "human") {
           setStatus("Bot is thinking...");
-          setTimeout(executeBotMove, 800);
-        } else if (player === "computer" && isGameActive) {
+          setTimeout(executeBotMove, 600);
+        } else {
+          isWaitingForHuman = true;
           setStatus("Your turn!");
         }
       }
 
-      /**
-       * Chooses an open square randomly for computer turn.
-       */
       function executeBotMove() {
         if (!isGameActive) return;
         const openCells = board
           .map((cell, index) => (cell ? -1 : index))
           .filter((index) => index >= 0);
-        if (openCells.length) {
+
+        if (openCells.length > 0) {
           const choice =
             openCells[Math.floor(Math.random() * openCells.length)];
           executeMove(choice, "computer", botColor);
@@ -436,7 +400,7 @@
       };
 
       btnStart.onclick = () => {
-        board.fill(null);
+        board = Array(9).fill(null);
         humanColor = document.querySelector(
           'input[name="color-choice"]:checked',
         ).value;
@@ -448,10 +412,11 @@
 
         render();
         setStatus(`Game ${gameId} started! Your turn.`);
-        setInterval(scanCameraFeed, 400);
+
+        if (scanIntervalId) clearInterval(scanIntervalId);
+        scanIntervalId = setInterval(scanCameraFeed, 400);
       };
 
-      // Initial View Initialization
       render();
     </script>
   </body>
