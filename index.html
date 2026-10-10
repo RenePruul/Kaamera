@@ -326,6 +326,18 @@
         }
       }
       /**
+       * Checks if the specified player has won the game.
+       * @param {string} player - 'human' or 'computer'
+       * @returns {boolean}
+       */
+      function checkWin(player) {
+        return WINNING_COMBINATIONS.some((combination) =>
+          combination.every(
+            (index) => board[index] && board[index].player === player,
+          ),
+        );
+      }
+      /**
        * Executes turn logic, checks win conditions, logs move data, and triggers bot response.
        * @param {number} index - Targeted board cell index [0..8].
        * @param {string} player - Player key ('human' or 'computer').
