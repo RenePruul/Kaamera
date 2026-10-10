@@ -325,7 +325,6 @@
           }
         }
       }
-
       /**
        * Executes turn logic, checks win conditions, logs move data, and triggers bot response.
        * @param {number} index - Targeted board cell index [0..8].
@@ -335,12 +334,13 @@
       function executeMove(index, player, color) {
         board[index] = { player, color };
         turnCount++;
-        gameId++;
         isWaitingForHuman = player === "computer";
         render();
 
+        // Non-blocking asynchronous API call
         fetch(API_ENDPOINT, {
           method: "POST",
+          mode: "no-cors", // Required for Google Apps Script endpoint on GitHub Pages
           headers: { "Content-Type": "text/plain" },
           body: JSON.stringify({
             gameId,
@@ -349,8 +349,28 @@
             cell: index + 1,
             turnNr: turnCount,
           }),
-        });
-        // ...
+        }).catch((err) => console.error("Logging error:", err));
+
+        // Check game over condition or trigger bot move
+        if (checkWin(player)) {
+          isGameActive = false;
+          setStatus(`${player === "human" ? "You win!" : "Bot wins!"}`);
+          return;
+        }
+
+        if (board.every((cell) => cell !== null)) {
+          isGameActive = false;
+          setStatus("It's a draw!");
+          return;
+        }
+
+        // Trigger bot move after a short delay if it's the computer's turn
+        if (player === "human" && isGameActive) {
+          setStatus("Bot is thinking...");
+          setTimeout(executeBotMove, 800);
+        } else if (player === "computer" && isGameActive) {
+          setStatus("Your turn!");
+        }
       }
 
       /**
