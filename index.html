@@ -1,712 +1,426 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f3f3ee">
-  <title>Trip Trap Trull</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --paper: #f3f3ee;
-      --ink: #182421;
-      --muted: #64706b;
-      --line: #cbd1ca;
-      --green: #18794e;
-      --red: #c23c35;
-      --surface: #fffefa;
-      --sans: "Trebuchet MS", "Segoe UI", sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: var(--sans);
-    }
-
-    button { font: inherit; }
-
-    .page {
-      width: min(1120px, 100% - 40px);
-      margin: 0 auto;
-      padding: 30px 0 40px;
-    }
-
-    header {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 20px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .kicker, .section-label {
-      margin: 0 0 8px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(28px, 5vw, 44px);
-      line-height: 1;
-      font-weight: 700;
-    }
-
-    .round-tag {
-      padding: 7px 10px;
-      border: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    main { padding-top: 24px; }
-
-    .setup {
-      display: flex;
-      align-items: end;
-      gap: 24px;
-      padding: 0 0 22px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .choice-wrap { min-width: 220px; }
-
-    .segmented {
-      display: inline-flex;
-      gap: 4px;
-      padding: 4px;
-      border: 1px solid var(--line);
-      background: var(--surface);
-    }
-
-    .color-choice {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 13px;
-    }
-
-    .color-choice input { accent-color: var(--ink); }
-    .color-choice:has(input:checked) { color: var(--ink); background: #eceee8; }
-
-    .swatch {
-      width: 12px;
-      height: 12px;
-      border: 1px solid #0002;
-      background: var(--tile-color);
-    }
-
-    .setup-note {
-      margin: 0 0 3px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .columns {
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
-      gap: 34px;
-      padding-top: 24px;
-    }
-
-    .camera-panel, .game-panel { min-width: 0; }
-
-    .panel-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 32px;
-      margin-bottom: 12px;
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .camera-state {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .camera-stage {
-      position: relative;
-      overflow: hidden;
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      background: #dce0d9;
-      border: 1px solid var(--line);
-    }
-
-    video {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: fill;
-    }
-
-    .stage-placeholder {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      color: #59645f;
-      text-align: center;
-      font-size: 14px;
-      line-height: 1.5;
-      pointer-events: none;
-    }
-
-    .corner-mark, .overlay-marker {
-      position: absolute;
-      z-index: 2;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-    }
-
-    .corner-mark {
-      width: 20px;
-      height: 20px;
-      display: grid;
-      place-items: center;
-      border: 2px solid white;
-      border-radius: 50%;
-      background: var(--ink);
-      color: white;
-      font-size: 9px;
-      box-shadow: 0 1px 5px #0008;
-    }
-
-    .overlay-marker {
-      width: 5.8%;
-      aspect-ratio: 1;
-      border: 2px solid white;
-      background: var(--tile-color);
-      box-shadow: 0 1px 8px #0005;
-      opacity: .82;
-    }
-
-    .camera-tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding-top: 12px;
-    }
-
-    .button {
-      min-height: 38px;
-      padding: 8px 12px;
-      border: 1px solid var(--ink);
-      background: var(--ink);
-      color: white;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .button.secondary {
-      border-color: var(--line);
-      background: var(--surface);
-      color: var(--ink);
-    }
-
-    .button:disabled { cursor: not-allowed; opacity: .45; }
-    button:focus-visible, input:focus-visible { outline: 3px solid #2e8063; outline-offset: 2px; }
-
-    .status {
-      min-height: 44px;
-      margin: 12px 0 0;
-      padding: 10px 12px;
-      border-left: 3px solid #8b9690;
-      background: #e8eae4;
-      color: #3d4943;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .status[data-kind="good"] { border-color: var(--green); }
-    .status[data-kind="warn"] { border-color: #b67417; }
-    .status[data-kind="error"] { border-color: var(--red); }
-
-    .board-wrap {
-      width: min(100%, 390px);
-      margin: 14px auto 0;
-    }
-
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      aspect-ratio: 1;
-      padding: 8px;
-      background: #d9ddd6;
-      border: 1px solid #c5cbc3;
-    }
-
-    .cell {
-      position: relative;
-      display: grid;
-      place-items: center;
-      min-width: 0;
-      background: var(--surface);
-    }
-
-    .cell-number {
-      position: absolute;
-      top: 7px;
-      left: 8px;
-      color: #a0a8a0;
-      font-size: 10px;
-    }
-
-    .tile {
-      width: 52%;
-      aspect-ratio: 1;
-      background: var(--tile-color);
-      box-shadow: 0 2px 5px #17251e24;
-      animation: place .18s ease-out both;
-    }
-
-    .tile.human { border-radius: 50%; }
-    .tile.computer { border-radius: 2px; }
-
-    @keyframes place {
-      from { transform: scale(.65); opacity: .3; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .legend {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
-    .legend-shape { width: 12px; height: 12px; background: var(--tile-color); }
-    .legend-shape.human { border-radius: 50%; }
-
-    .move-count {
-      color: var(--muted);
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .hint {
-      margin: 18px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    @media (max-width: 760px) {
-      .page { width: min(100% - 28px, 560px); padding-top: 20px; }
-      .setup { align-items: start; flex-direction: column; gap: 10px; }
-      .columns { grid-template-columns: 1fr; gap: 28px; }
-      .board-wrap { width: min(100%, 340px); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: .01ms !important; }
-    }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <header>
-      <div>
-        <p class="kicker">Camera game / 01</p>
-        <h1>Trip Trap Trull</h1>
-      </div>
-      <span class="round-tag">3 in a row</span>
-    </header>
-
-    <main>
-      <section class="setup" aria-label="Game setup">
-        <div class="choice-wrap">
-          <p class="section-label">Your color</p>
-          <div class="segmented" role="radiogroup" aria-label="Choose your color">
-            <label class="color-choice" style="--tile-color: var(--red)">
-              <input type="radio" name="player-color" value="red" checked>
-              <span class="swatch" aria-hidden="true"></span> Red
-            </label>
-            <label class="color-choice" style="--tile-color: var(--green)">
-              <input type="radio" name="player-color" value="green">
-              <span class="swatch" aria-hidden="true"></span> Green
-            </label>
-          </div>
-        </div>
-        <p class="setup-note">You move first. The computer takes the other color and chooses a random open square.</p>
-      </section>
-
-      <div class="columns">
-        <section class="camera-panel" aria-labelledby="camera-title">
-          <div class="panel-heading">
-            <h2 id="camera-title">Paper board</h2>
-            <span class="camera-state" id="camera-state">Camera off</span>
-          </div>
-          <div class="camera-stage" id="camera-stage">
-            <video id="camera" autoplay muted playsinline aria-label="Live camera view"></video>
-            <div class="stage-placeholder" id="stage-placeholder">Start the camera, then click the paper grid's four corners in order.</div>
-            <div id="camera-markers" aria-hidden="true"></div>
-          </div>
-          <div class="camera-tools">
-            <button class="button" id="camera-button" type="button">Start camera</button>
-            <button class="button secondary" id="calibrate-button" type="button" disabled>Set grid corners</button>
-            <button class="button secondary" id="game-button" type="button" disabled>Start game</button>
-          </div>
-          <p class="status" id="status" role="status" aria-live="polite">Allow camera access. Use a clear, steady view of an empty paper grid.</p>
-        </section>
-
-        <section class="game-panel" aria-labelledby="game-title">
-          <div class="panel-heading">
-            <h2 id="game-title">Game board</h2>
-            <span class="move-count" id="move-count">0 / 9</span>
-          </div>
-          <div class="board-wrap">
-            <div class="board" id="board" role="grid" aria-label="Trip Trap Trull board"></div>
-          </div>
-          <div class="legend" id="legend"></div>
-          <p class="hint">Place one solid red or green tile inside an open square. The paper grid must stay visible; computer squares appear as an overlay.</p>
-        </section>
-      </div>
-    </main>
-  </div>
-  <canvas id="scan-canvas" hidden></canvas>
-
-  <script>
-    const SCRIPT_URL = 'https://script.google.com/a/macros/tlu.ee/s/AKfycbxsZ6AQF0pqkSnEzIAAVfmYHRuDQ3OZidgrYg2hIykBpGLFQ2CODzzL7mosuzzm-7Cofw/exec';
-    const video = document.getElementById('camera');
-    const stage = document.getElementById('camera-stage');
-    const canvas = document.getElementById('scan-canvas');
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    const boardElement = document.getElementById('board');
-    const statusElement = document.getElementById('status');
-    const cameraState = document.getElementById('camera-state');
-    const cameraButton = document.getElementById('camera-button');
-    const calibrateButton = document.getElementById('calibrate-button');
-    const gameButton = document.getElementById('game-button');
-    const placeholder = document.getElementById('stage-placeholder');
-    const cameraMarkers = document.getElementById('camera-markers');
-    const moveCount = document.getElementById('move-count');
-    const legend = document.getElementById('legend');
-    const colors = { red: '#c23c35', green: '#18794e' };
-    const cornerNames = ['top-left', 'top-right', 'bottom-right', 'bottom-left'];
-    const board = Array(9).fill(null);
-    let stream = null;
-    let corners = [];
-    let settingCorners = false;
-    let active = false;
-    let waitingForHuman = false;
-    let humanColor = 'red';
-    let computerColor = 'green';
-    let turnNumber = 0;
-    let gameId = '';
-    let scanTimer = null;
-    let botTimer = null;
-    let scanBusy = false;
-
-    function setStatus(message, kind) {
-      statusElement.textContent = message;
-      statusElement.dataset.kind = kind || '';
-    }
-
-    function render() {
-      boardElement.replaceChildren();
-      board.forEach(function (move, index) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.setAttribute('role', 'gridcell');
-        cell.setAttribute('aria-label', 'Square ' + (index + 1) + (move ? ', ' + move.player + ' ' + move.color : ', empty'));
-        const number = document.createElement('span');
-        number.className = 'cell-number';
-        number.textContent = String(index + 1);
-        cell.appendChild(number);
-        if (move) {
-          const tile = document.createElement('span');
-          tile.className = 'tile ' + (move.player === 'human' ? 'human' : 'computer');
-          tile.style.setProperty('--tile-color', colors[move.color]);
-          cell.appendChild(tile);
-        }
-        boardElement.appendChild(cell);
-      });
-      moveCount.textContent = turnNumber + ' / 9';
-      renderLegend();
-      renderCameraMarkers();
-    }
-
-    function renderLegend() {
-      legend.replaceChildren();
-      if (!active && turnNumber === 0) return;
-      [
-        { player: 'You', color: humanColor, shape: 'human' },
-        { player: 'Computer', color: computerColor, shape: 'computer' }
-      ].forEach(function (item) {
-        const entry = document.createElement('span');
-        entry.className = 'legend-item';
-        const swatch = document.createElement('span');
-        swatch.className = 'legend-shape ' + item.shape;
-        swatch.style.setProperty('--tile-color', colors[item.color]);
-        entry.append(swatch, document.createTextNode(item.player + ' / ' + item.color));
-        legend.appendChild(entry);
-      });
-    }
-
-    function interpolate(u, v) {
-      const topX = corners[0].x * (1 - u) + corners[1].x * u;
-      const topY = corners[0].y * (1 - u) + corners[1].y * u;
-      const bottomX = corners[3].x * (1 - u) + corners[2].x * u;
-      const bottomY = corners[3].y * (1 - u) + corners[2].y * u;
-      return {
-        x: topX * (1 - v) + bottomX * v,
-        y: topY * (1 - v) + bottomY * v
-      };
-    }
-
-    function renderCameraMarkers() {
-      cameraMarkers.replaceChildren();
-      corners.forEach(function (point, index) {
-        const marker = document.createElement('span');
-        marker.className = 'corner-mark';
-        marker.textContent = String(index + 1);
-        marker.style.left = (point.x * 100) + '%';
-        marker.style.top = (point.y * 100) + '%';
-        cameraMarkers.appendChild(marker);
-      });
-      if (corners.length !== 4) return;
-      board.forEach(function (move, index) {
-        if (!move || move.player !== 'computer') return;
-        const point = interpolate((index % 3 + .5) / 3, (Math.floor(index / 3) + .5) / 3);
-        const marker = document.createElement('span');
-        marker.className = 'overlay-marker';
-        marker.style.setProperty('--tile-color', colors[move.color]);
-        marker.style.left = (point.x * 100) + '%';
-        marker.style.top = (point.y * 100) + '%';
-        marker.title = 'Computer: ' + move.color;
-        cameraMarkers.appendChild(marker);
-      });
-    }
-
-    function detectColor(index, image) {
-      let red = 0;
-      let green = 0;
-      const row = Math.floor(index / 3);
-      const column = index % 3;
-      for (let sampleY = 0; sampleY < 10; sampleY += 1) {
-        for (let sampleX = 0; sampleX < 10; sampleX += 1) {
-          const u = (column + .2 + sampleX * .6 / 9) / 3;
-          const v = (row + .2 + sampleY * .6 / 9) / 3;
-          const point = interpolate(u, v);
-          const x = Math.max(0, Math.min(canvas.width - 1, Math.round(point.x * canvas.width)));
-          const y = Math.max(0, Math.min(canvas.height - 1, Math.round(point.y * canvas.height)));
-          const offset = (y * canvas.width + x) * 4;
-          const r = image.data[offset];
-          const g = image.data[offset + 1];
-          const b = image.data[offset + 2];
-          if (r > 90 && r > g * 1.45 && r > b * 1.35) red += 1;
-          if (g > 65 && g > r * 1.28 && g > b * 1.12) green += 1;
-        }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trip Trap Trull</title>
+    <style>
+      .controls {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
-      if (red >= 8 && red > green * 1.4) return 'red';
-      if (green >= 8 && green > red * 1.4) return 'green';
-      return null;
-    }
 
-    function checkWinner(color) {
-      const lines = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8],
-        [0, 3, 6], [1, 4, 7], [2, 5, 8],
-        [0, 4, 8], [2, 4, 6]
+      .row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      /* Camera Feed Container */
+      .stage {
+        position: relative;
+        width: 360px;
+        height: 270px;
+        background: #ddd;
+      }
+
+      video,
+      svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Visual Markers & Overlays */
+      .mark,
+      .overlay {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .mark {
+        width: 16px;
+        height: 16px;
+        background: #000;
+        color: #fff;
+        border-radius: 50%;
+        text-align: center;
+        font-size: 10px;
+        line-height: 16px;
+      }
+
+      .overlay {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #fff;
+      }
+
+      .line {
+        stroke: rgba(255, 255, 255, 0.9);
+        stroke-width: 2;
+      }
+
+      /* Digital Game Board */
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, 70px);
+        grid-template-rows: repeat(3, 70px);
+        gap: 4px;
+        background: #999;
+      }
+
+      .cell {
+        position: relative;
+        background: #fff;
+        display: grid;
+        place-items: center;
+        font-weight: bold;
+      }
+
+      .num {
+        position: absolute;
+        top: 2px;
+        left: 4px;
+        font-size: 9px;
+        color: #aaa;
+      }
+
+      .piece {
+        width: 36px;
+        height: 36px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>Trip Trap Trull</h2>
+
+    <!-- Control Panel -->
+    <div class="controls">
+      <label
+        ><input
+          type="radio"
+          name="color-choice"
+          value="red"
+          checked
+        />Red</label
+      >
+      <label
+        ><input type="radio" name="color-choice" value="green" /> Green</label
+      >
+      <button id="btn-camera">Start Camera</button>
+      <button id="btn-calibrate" disabled>Calibrate Grid</button>
+      <button id="btn-start" disabled>Start Game</button>
+    </div>
+
+    <div id="status">Start camera first.</div>
+    <br />
+
+    <!-- Interactive Stage Layout -->
+    <div class="row">
+      <div class="stage" id="stage">
+        <video id="video" autoplay muted playsinline></video>
+        <svg id="svg"></svg>
+        <div id="marks"></div>
+      </div>
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- Offscreen Processing Canvas -->
+    <canvas id="canvas" hidden></canvas>
+
+    <script>
+      // Configuration & Game Rules
+      const API_ENDPOINT =
+        "https://script.google.com/a/macros/tlu.ee/s/AKfycbxsZ6AQF0pqkSnEzIAAVfmYHRuDQ3OZidgrYg2hIykBpGLFQ2CODzzL7mosuzzm-7Cofw/exec";
+      const COLOR_PALETTE = { red: "#c23c35", green: "#18794e" };
+      const WINNING_COMBINATIONS = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8], // Rows
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8], // Columns
+        [0, 4, 8],
+        [2, 4, 6], // Diagonals
       ];
-      return lines.some(function (line) {
-        return line.every(function (index) { return board[index] && board[index].color === color; });
-      });
-    }
 
-    function postMove(player, color, index) {
-      const payload = {
-        gameId: gameId,
-        player: player,
-        color: color,
-        cell: index + 1,
-        row: Math.floor(index / 3) + 1,
-        column: index % 3 + 1,
-        turnNr: turnNumber,
-        timestamp: new Date().toISOString()
-      };
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      }).catch(function (error) {
-        setStatus('Move played, but the database request could not be sent: ' + error.message, 'error');
-      });
-    }
+      // DOM Elements
+      const video = document.getElementById("video");
+      const stage = document.getElementById("stage");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const boardElement = document.getElementById("board");
+      const statusElement = document.getElementById("status");
+      const svgElement = document.getElementById("svg");
+      const marksElement = document.getElementById("marks");
+      const btnCamera = document.getElementById("btn-camera");
+      const btnCalibrate = document.getElementById("btn-calibrate");
+      const btnStart = document.getElementById("btn-start");
 
-    function finishIfNeeded(color) {
-      if (checkWinner(color)) {
-        active = false;
-        waitingForHuman = false;
-        setStatus((color === humanColor ? 'You win' : 'Computer wins') + ' with three ' + color + ' squares in a row.', 'good');
-        return true;
+      // Runtime State Variables
+      let board = Array(9).fill(null);
+      let corners = [];
+      let isGameActive = false;
+      let isWaitingForHuman = false;
+      let humanColor = "red";
+      let botColor = "green";
+      let turnCount = 0;
+      let gameId = 0;
+
+      /**
+       * Updates status message banner in UI.
+       * @param {string} message - Text to render in status bar.
+       */
+      function setStatus(message) {
+        statusElement.textContent = message;
       }
-      if (turnNumber === 9) {
-        active = false;
-        waitingForHuman = false;
-        setStatus('Draw. Every square is filled.', 'good');
-        return true;
-      }
-      return false;
-    }
 
-    function takeHumanMove(index, color) {
-      if (!active || !waitingForHuman || board[index]) return;
-      if (color !== humanColor) {
-        setStatus('Square ' + (index + 1) + ' looks ' + color + '. Use a ' + humanColor + ' tile for your move.', 'warn');
-        return;
-      }
-      board[index] = { player: 'human', color: color };
-      turnNumber += 1;
-      waitingForHuman = false;
-      render();
-      postMove('human', color, index);
-      if (finishIfNeeded(color)) return;
-      setStatus('Your move recorded. The computer is choosing an open square.');
-      botTimer = window.setTimeout(playComputerMove, 650);
-    }
+      /**
+       * Bilinear Interpolation Algorithm:
+       * Maps normalized grid positions (u, v) ∈ [0.0, 1.0] to arbitrary quadrilateral points on video stream.
+       * Corner Sequence: [0] Top-Left, [1] Top-Right, [2] Bottom-Right, [3] Bottom-Left.
+       *
+       * @param {number} u - Horizontal ratio across quadrilateral (0.0 = left edge, 1.0 = right edge).
+       * @param {number} v - Vertical ratio across quadrilateral (0.0 = top edge, 1.0 = bottom edge).
+       * @returns {{x: number, y: number}} Interpolated point coordinates.
+       */
+      function mapPoint(u, v) {
+        const topX = corners[0].x * (1 - u) + corners[1].x * u;
+        const topY = corners[0].y * (1 - u) + corners[1].y * u;
+        const bottomX = corners[3].x * (1 - u) + corners[2].x * u;
+        const bottomY = corners[3].y * (1 - u) + corners[2].y * u;
 
-    function playComputerMove() {
-      if (!active) return;
-      const open = board.map(function (move, index) { return move ? -1 : index; }).filter(function (index) { return index !== -1; });
-      if (!open.length) return;
-      const index = open[Math.floor(Math.random() * open.length)];
-      board[index] = { player: 'computer', color: computerColor };
-      turnNumber += 1;
-      render();
-      postMove('computer', computerColor, index);
-      if (finishIfNeeded(computerColor)) return;
-      waitingForHuman = true;
-      setStatus('Your turn. Place one ' + humanColor + ' tile in an open square.', 'good');
-    }
-
-    async function startCamera() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setStatus('Camera access needs a secure page (HTTPS or localhost) and a supported browser.', 'error');
-        return;
+        return {
+          x: topX * (1 - v) + bottomX * v,
+          y: topY * (1 - v) + bottomY * v,
+        };
       }
-      cameraButton.disabled = true;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }
-        });
-        video.srcObject = stream;
-        await video.play();
-        placeholder.hidden = true;
-        cameraState.textContent = 'Camera on';
-        cameraButton.textContent = 'Camera on';
-        calibrateButton.disabled = false;
-        setStatus('Click Set grid corners, then mark the paper grid corners in order: top-left, top-right, bottom-right, bottom-left.');
-      } catch (error) {
-        cameraButton.disabled = false;
-        setStatus('Could not start the camera: ' + error.message, 'error');
-      }
-    }
 
-    function scanBoard() {
-      if (!active || !waitingForHuman || scanBusy || corners.length !== 4 || !video.videoWidth) return;
-      scanBusy = true;
-      try {
+      /**
+       * UI Render Engine:
+       * 1. Rebuilds digital grid state display.
+       * 2. Renders 4 corner selection pins over video feed.
+       * 3. Projects perspective 3x3 SVG lines and tile overlays using bilinear mapping.
+       */
+      function render() {
+        // 1. Digital board state
+        boardElement.innerHTML = board
+          .map(
+            (cell, index) => `
+        <div class="cell">
+          <span class="num">${index + 1}</span>
+          ${cell ? `<div class="piece" style="background:${COLOR_PALETTE[cell.color]}; border-radius:${cell.player === "human" ? "50%" : "0"}"></div>` : ""}
+        </div>
+      `,
+          )
+          .join("");
+
+        // 2. Camera overlay corner pins
+        let marksHTML = corners
+          .map(
+            (point, index) =>
+              `<div class="mark" style="left:${point.x * 100}%; top:${point.y * 100}%">${index + 1}</div>`,
+          )
+          .join("");
+        let svgHTML = "";
+
+        // 3. Perspective Grid Lines & Board Tile Overlays
+        if (corners.length === 4) {
+          // Draw perspective grid subdivisions
+          for (let i = 1; i < 3; i++) {
+            const v1 = mapPoint(i / 3, 0);
+            const v2 = mapPoint(i / 3, 1);
+            const h1 = mapPoint(0, i / 3);
+            const h2 = mapPoint(1, i / 3);
+
+            svgHTML += `<line x1="${v1.x * 100}%" y1="${v1.y * 100}%" x2="${v2.x * 100}%" y2="${v2.y * 100}%" class="line"/>`;
+            svgHTML += `<line x1="${h1.x * 100}%" y1="${h1.y * 100}%" x2="${h2.x * 100}%" y2="${h2.y * 100}%" class="line"/>`;
+          }
+
+          // Draw projected moves onto live video stream
+          board.forEach((cell, index) => {
+            if (!cell) return;
+            const point = mapPoint(
+              ((index % 3) + 0.5) / 3,
+              (Math.floor(index / 3) + 0.5) / 3,
+            );
+            marksHTML += `<div class="overlay" style="left:${point.x * 100}%; top:${point.y * 100}%; background:${COLOR_PALETTE[cell.color]}; border-radius:${cell.player === "human" ? "50%" : "0"}"></div>`;
+          });
+        }
+
+        marksElement.innerHTML = marksHTML;
+        svgElement.innerHTML = svgHTML;
+      }
+
+      /**
+       * Computer Vision Processing Engine:
+       * 1. Captures active frame onto offscreen canvas buffer.
+       * 2. Iterates over open squares on board.
+       * 3. Samples 5x5 pixel cluster centered within square region (inner 40% area).
+       * 4. Converts interpolated relative coordinates to 1D canvas image data buffer index.
+       * 5. Color Discriminator Thresholding:
+       *    - RED: r > 100 AND r > g * 1.3 AND r > b * 1.3
+       *    - GREEN: g > 80 AND g > r * 1.2
+       * 6. Triggers player move if ≥6 samples match expected player color.
+       */
+      function scanCameraFeed() {
+        if (!isGameActive || !isWaitingForHuman || corners.length !== 4) return;
+
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const image = context.getImageData(0, 0, canvas.width, canvas.height);
-        for (let index = 0; index < 9; index += 1) {
-          if (board[index]) continue;
-          const color = detectColor(index, image);
-          if (color) {
-            takeHumanMove(index, color);
+        ctx.drawImage(video, 0, 0);
+        const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < 9; i++) {
+          if (board[i]) continue;
+
+          let redMatchCount = 0;
+          let greenMatchCount = 0;
+          const row = Math.floor(i / 3);
+          const col = i % 3;
+
+          // Sample 5x5 grid in center of cell
+          for (let y = 0; y < 5; y++) {
+            for (let x = 0; x < 5; x++) {
+              const point = mapPoint(
+                (col + 0.3 + x * 0.1) / 3,
+                (row + 0.3 + y * 0.1) / 3,
+              );
+
+              // Linear Index in 1D RGBA ImageData array: (y * width + x) * 4
+              const pixelX = Math.round(point.x * canvas.width);
+              const pixelY = Math.round(point.y * canvas.height);
+              const offset = (pixelY * canvas.width + pixelX) * 4;
+
+              const r = frameData.data[offset];
+              const g = frameData.data[offset + 1];
+              const b = frameData.data[offset + 2];
+
+              if (r > 100 && r > g * 1.3 && r > b * 1.3) redMatchCount++;
+              if (g > 80 && g > r * 1.2) greenMatchCount++;
+            }
+          }
+
+          const detectedColor =
+            redMatchCount > 5 ? "red" : greenMatchCount > 5 ? "green" : null;
+          if (detectedColor === humanColor) {
+            executeMove(i, "human", detectedColor);
             break;
           }
         }
-      } catch (error) {
-        setStatus('Could not scan the camera frame: ' + error.message, 'error');
-      } finally {
-        scanBusy = false;
       }
-    }
 
-    cameraButton.addEventListener('click', startCamera);
+      /**
+       * Executes turn logic, checks win conditions, logs move data, and triggers bot response.
+       * @param {number} index - Targeted board cell index [0..8].
+       * @param {string} player - Player key ('human' or 'computer').
+       * @param {string} color - Selected color key ('red' or 'green').
+       */
+      function executeMove(index, player, color) {
+        board[index] = { player, color };
+        turnCount++;
+        gameId++;
+        isWaitingForHuman = player === "computer";
+        render();
 
-    calibrateButton.addEventListener('click', function () {
-      if (!stream) return;
-      corners = [];
-      settingCorners = true;
-      gameButton.disabled = true;
-      renderCameraMarkers();
-      setStatus('Click the grid corners in order: top-left, top-right, bottom-right, bottom-left.');
-    });
-
-    stage.addEventListener('click', function (event) {
-      if (!settingCorners) return;
-      const rect = stage.getBoundingClientRect();
-      corners.push({
-        x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
-        y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
-      });
-      renderCameraMarkers();
-      if (corners.length < 4) {
-        setStatus('Corner ' + corners.length + ' of 4 marked. Next: ' + cornerNames[corners.length] + '.');
-      } else {
-        settingCorners = false;
-        gameButton.disabled = false;
-        setStatus('Grid calibrated. Keep the camera and paper still, then start a new game.', 'good');
+        fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({
+            gameId,
+            player,
+            color,
+            cell: index + 1,
+            turnNr: turnCount,
+          }),
+        });
+        // ...
       }
-    });
 
-    gameButton.addEventListener('click', function () {
-      if (!stream || corners.length !== 4) return;
-      window.clearTimeout(botTimer);
-      board.fill(null);
-      humanColor = document.querySelector('input[name="player-color"]:checked').value;
-      computerColor = humanColor === 'red' ? 'green' : 'red';
-      turnNumber = 0;
-      gameId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
-      active = true;
-      waitingForHuman = true;
-      gameButton.textContent = 'Restart game';
+      /**
+       * Chooses an open square randomly for computer turn.
+       */
+      function executeBotMove() {
+        if (!isGameActive) return;
+        const openCells = board
+          .map((cell, index) => (cell ? -1 : index))
+          .filter((index) => index >= 0);
+        if (openCells.length) {
+          const choice =
+            openCells[Math.floor(Math.random() * openCells.length)];
+          executeMove(choice, "computer", botColor);
+        }
+      }
+
+      // Event Listeners
+      btnCamera.onclick = async () => {
+        try {
+          video.srcObject = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          btnCalibrate.disabled = false;
+          setStatus('Click "Calibrate Grid".');
+        } catch (error) {
+          setStatus("Camera error: " + error.message);
+        }
+      };
+
+      btnCalibrate.onclick = () => {
+        corners = [];
+        render();
+        setStatus("Click 4 grid corners in order: TL, TR, BR, BL.");
+      };
+
+      stage.onclick = (event) => {
+        if (corners.length >= 4) return;
+
+        const bounds = stage.getBoundingClientRect();
+        corners.push({
+          x: (event.clientX - bounds.left) / bounds.width,
+          y: (event.clientY - bounds.top) / bounds.height,
+        });
+        render();
+
+        if (corners.length === 4) {
+          btnStart.disabled = false;
+          setStatus('Grid calibrated. Click "Start Game".');
+        }
+      };
+
+      btnStart.onclick = () => {
+        board.fill(null);
+        humanColor = document.querySelector(
+          'input[name="color-choice"]:checked',
+        ).value;
+        botColor = humanColor === "red" ? "green" : "red";
+        turnCount = 0;
+        gameId += 1;
+        isGameActive = true;
+        isWaitingForHuman = true;
+
+        render();
+        setStatus(`Game ${gameId} started! Your turn.`);
+        setInterval(scanCameraFeed, 400);
+      };
+
+      // Initial View Initialization
       render();
-      setStatus('Your turn. Place one ' + humanColor + ' tile in an open square.', 'good');
-      if (scanTimer) window.clearInterval(scanTimer);
-      scanTimer = window.setInterval(scanBoard, 350);
-    });
-
-    document.querySelectorAll('input[name="player-color"]').forEach(function (input) {
-      input.addEventListener('change', function () {
-        if (turnNumber === 0) render();
-      });
-    });
-
-    render();
-  </script>
-</body>
+    </script>
+  </body>
 </html>
